@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiant Energies</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel for translating JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Outfit', sans-serif; background-color: #020617; color: white; }
+        h1, h2, h3, h4, h5, h6, .font-mono { font-family: 'Space Grotesk', sans-serif; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .animate-flow { animation: flow 1s linear infinite; }
+        @keyframes flow { to { stroke-dashoffset: -20; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICONS (SVG Components) ---
+        // Replacing Lucide imports with direct SVGs for standalone functionality
+        const IconBase = ({ children, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+                {children}
+            </svg>
+        );
+
+        const Zap = (props) => <IconBase {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></IconBase>;
+        const Menu = (props) => <IconBase {...props}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></IconBase>;
+        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 18 18"/></IconBase>;
+        const ShoppingCart = (props) => <IconBase {...props}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></IconBase>;
+        const Wrench = (props) => <IconBase {...props}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></IconBase>;
+        const TrendingUp = (props) => <IconBase {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></IconBase>;
+        const ShieldCheck = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></IconBase>;
+        const BarChart3 = (props) => <IconBase {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></IconBase>;
+        const Phone = (props) => <IconBase {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconBase>;
+        const Mail = (props) => <IconBase {...props}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></IconBase>;
+        const MapPin = (props) => <IconBase {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconBase>;
+        const ArrowRight = (props) => <IconBase {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></IconBase>;
+        const Grid = (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></IconBase>;
+        const User = (props) => <IconBase {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconBase>;
+        const Smartphone = (props) => <IconBase {...props}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></IconBase>;
+        const Settings = (props) => <IconBase {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></IconBase>;
+
+        // --- CUSTOM SIMULATOR ICONS ---
+        const SimSunIcon = ({ intensity }) => (
+            <div className={`relative transition-all duration-1000 ${intensity > 0 ? 'opacity-100' : 'opacity-20'}`}>
+                <div className={`absolute inset-0 bg-amber-400 rounded-full blur-[40px] transition-all duration-1000`} style={{ opacity: intensity }}></div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-16 h-16 text-amber-300 relative z-10" strokeWidth="1.5">
+                    <circle cx="12" cy="12" r="4" fill="currentColor" fillOpacity="0.4"></circle>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                </svg>
+            </div>
+        );
+
+        const SimPanelIcon = () => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-12 h-12 text-blue-400" strokeWidth="1">
+                <rect x="2" y="3" width="20" height="18" rx="2" fill="rgba(59, 130, 246, 0.2)"></rect>
+                <path d="M2 9h20M2 15h20M8 3v18M16 3v18" strokeOpacity="0.6"></path>
+            </svg>
+        );
+
+        const SimGridIcon = () => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-10 h-10 text-slate-300" strokeWidth="1.5"><path d="M8 14L7 23M16 14L17 23M4 6l8-4 8 4M12 2v22M4 14h16M4 10h16M4 6h16"></path></svg>
+        );
+        const SimHomeIcon = () => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-10 h-10" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><rect x="10" y="3" width="4" height="6" fill="currentColor" fillOpacity="0.2"></rect></svg>
+        );
+        const SimBatteryIcon = ({level}) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-12 h-12 text-emerald-400" strokeWidth="1.5">
+                <rect x="2" y="6" width="20" height="12" rx="2" strokeOpacity="0.5"></rect>
+                <path d="M22 11v2"></path>
+                <rect x="4" y="8" width={Math.max(0, (level/100)*16)} height="8" rx="1" fill="currentColor" className="transition-all duration-500"></rect>
+            </svg>
+        );
+
+        // --- SUB COMPONENTS ---
+
+        const InverterScreen = ({ solarWatts, loadWatts, gridStatus, batteryStatus, batteryLevel, systemType, systemVolts, pvVolts, chargingWatts }) => {
+            const sWatts = solarWatts || 0;
+            const lWatts = loadWatts || 0;
+            const cWatts = chargingWatts || 0;
+            const pvV = pvVolts || 0;
+            const pvA = pvV > 0 ? (sWatts / pvV).toFixed(1) : "0.0";
+            
+            let gridTxt = "0 W";
+            let gridLbl = "IDLE";
+            let gridCol = "text-slate-500";
+
+            if (gridStatus) {
+                const consumption = lWatts + (batteryStatus === 'Charging' ? cWatts : 0);
+                const net = sWatts - consumption;
+
+                if (net >= 0) {
+                    gridTxt = `${Math.abs(Math.round(net))} W`;
+                    gridLbl = "EXPORT";
+                    gridCol = "text-emerald-400";
+                } else {
+                    gridTxt = `${Math.abs(Math.round(net))} W`;
+                    gridLbl = "IMPORT";
+                    gridCol = "text-rose-400";
+                }
+            } else {
+                gridLbl = "CUT";
+                gridCol = "text-rose-500";
+            }
+
+            let batAmps = "0.0";
+            if(batteryStatus === 'Charging') batAmps = (cWatts / systemVolts).toFixed(1);
+            if(batteryStatus === 'Discharging') {
+                const dischargeWatts = lWatts - sWatts;
+                batAmps = (Math.max(0, dischargeWatts) / systemVolts).toFixed(1);
+            }
+
+            return (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                    <div className="w-64 bg-slate-950/80 backdrop-blur-2xl rounded-2xl border border-violet-500/30 p-4 shadow-[0_0_40px_rgba(139,92,246,0.15)]">
+                        <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
+                            <span className="text-[10px] text-violet-300 font-mono tracking-widest">SMART INVERTER</span>
+                            <div className={`w-2 h-2 rounded-full ${sWatts > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`}></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+                            <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                                <div className="text-[9px] text-amber-400 mb-0.5">PV INPUT</div>
+                                <div className="text-white text-lg font-bold">{sWatts} W</div>
+                                <div className="text-slate-500 text-[9px]">{pvVolts.toFixed(0)}V | {pvA}A</div>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                                <div className="text-[9px] text-blue-400 mb-0.5">GRID</div>
+                                <div className={`text-lg font-bold ${gridCol}`}>{gridTxt}</div>
+                                <div className="text-[9px] text-slate-500">{gridLbl}</div>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                                <div className="text-[9px] text-emerald-400 mb-0.5">BATTERY</div>
+                                <div className="text-white text-lg font-bold">{systemType === 'On-Grid' ? '--' : batteryLevel.toFixed(0)+'%'}</div>
+                                <div className={`text-[9px] ${batteryStatus==='Charging'?'text-emerald-400':batteryStatus==='Discharging'?'text-amber-400':'text-slate-500'}`}>
+                                    {batteryStatus === 'Idle' ? '0.0 A' : `${batAmps} A`}
+                                </div>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded-lg border border-white/5">
+                                <div className="text-[9px] text-violet-400 mb-0.5">LOAD</div>
+                                <div className="text-white text-lg font-bold">{lWatts} W</div>
+                                <div className="text-slate-500 text-[9px]">{systemVolts}V AC</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Connection = ({ from, to, active, type }) => {
+            const pos = { 
+                sun: {x:50, y:8}, 
+                panel: {x:50, y:25}, 
+                inv: {x:50, y:50}, 
+                grid: {x:10, y:50}, 
+                home: {x:90, y:50}, 
+                bat: {x:50, y:85} 
+            };
+
+            let p1 = pos[from];
+            let p2 = pos[to];
+
+            let d = `M${p1.x},${p1.y} L${p2.x},${p2.y}`;
+            
+            if((from==='grid'&&to==='home') || (from==='home'&&to==='grid')) {
+                 d = `M${pos.grid.x},${pos.grid.y} Q50,20 ${pos.home.x},${pos.home.y}`;
+            }
+
+            let color = "#fff";
+            if(type === 'solar') color = "#fbbf24";
+            if(type === 'grid') color = "#ef4444";
+            if(type === 'battery') color = "#10b981";
+            if(type === 'load') color = "#8b5cf6";
+
+            return (
+                <g>
+                    <path d={d} stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="none" strokeLinecap="round" />
+                    {active && (
+                        <path d={d} stroke={color} strokeWidth="2" fill="none" strokeDasharray="8 4" className="animate-flow" />
+                    )}
+                </g>
+            );
+        };
+
+        const Simulator = () => {
+            const [systemType, setSystemType] = useState('Hybrid');
+            const [hour, setHour] = useState(12);
+            const [gridOn, setGridOn] = useState(true);
+            const [cutStartTime, setCutStartTime] = useState(13);
+            const [cutDuration, setCutDuration] = useState(0);
+            const [numStrings, setNumStrings] = useState(2);
+            const [panelsPerString, setPanelsPerString] = useState(8);
+            const [panelWatts, setPanelWatts] = useState(550);
+            const [batteryLevel, setBatteryLevel] = useState(50);
+            const [batteryAh, setBatteryAh] = useState(150);
+            const [batteryVolt, setBatteryVolt] = useState(48);
+            const [loadWatts, setLoadWatts] = useState(1200);
+
+            const systemSizeKW = (numStrings * panelsPerString * panelWatts) / 1000;
+            const systemPVVolts = panelsPerString * 42; 
+            
+            const isDaytime = hour >= 6 && hour < 18;
+            const sunIntensity = isDaytime ? Math.sin(((hour - 6) / 12) * Math.PI) : 0;
+            const rawSolarWatts = systemSizeKW * 1000 * sunIntensity;
+            const effectiveSolarWatts = Math.round(rawSolarWatts * 0.85);
+
+            const isScheduledCut = (hour >= cutStartTime && hour < cutStartTime + cutDuration);
+            const effectiveGrid = gridOn && !isScheduledCut;
+            const actualSolarInput = (systemType === 'On-Grid' && !effectiveGrid) ? 0 : effectiveSolarWatts;
+
+            const batteryStats = useMemo(() => {
+                const totalEnergykWh = (batteryVolt * batteryAh) / 1000;
+                const dod = 0.95; 
+                const usablekWh = totalEnergykWh * dod;
+                const currentStoredkWh = (batteryLevel / 100) * totalEnergykWh;
+                const unitsToFull = Math.max(0, totalEnergykWh - currentStoredkWh);
+                const inverterEff = 0.9;
+                const activeLoadKW = Math.max(loadWatts, 10) / 1000;
+                const dischargeHours = activeLoadKW > 0 ? ((currentStoredkWh * inverterEff) / activeLoadKW).toFixed(1) : ">24";
+
+                return {
+                    totalCapacity: totalEnergykWh.toFixed(2),
+                    usableCapacity: usablekWh.toFixed(2),
+                    unitsToFull: unitsToFull.toFixed(2),
+                    estDischargeTime: dischargeHours,
+                    currentStored: currentStoredkWh.toFixed(2)
+                };
+            }, [batteryAh, batteryVolt, loadWatts, batteryLevel]);
+
+            const simState = useMemo(() => {
+                let status = "System Idle";
+                let houseSource = "None";
+                let batteryStatus = "Idle";
+                let flows = [];
+                let chargingWatts = 0;
+                let timeToFull = "N/A";
+                let gridFlowLabel = "0 W";
+                let gridFlowStatus = "IDLE"; 
+
+                if (loadWatts > 0) {
+                    if (actualSolarInput >= loadWatts) {
+                        houseSource = "Solar";
+                        flows.push({from: 'sun', to: 'panel', type: 'solar'});
+                        flows.push({from: 'panel', to: 'inv', type: 'solar'});
+                        flows.push({from: 'inv', to: 'home', type: 'load'});
+                        
+                        const surplus = actualSolarInput - loadWatts;
+                        if (batteryLevel < 100 && systemType !== 'On-Grid') {
+                            batteryStatus = "Charging";
+                            flows.push({from: 'inv', to: 'bat', type: 'battery'});
+                            if(systemType === 'Hybrid' && effectiveGrid) {
+                                 chargingWatts = surplus + 500; 
+                                 flows.push({from: 'grid', to: 'inv', type: 'grid'});
+                            } else {
+                                chargingWatts = surplus;
+                            }
+                        } 
+                        else if (effectiveGrid) {
+                            flows.push({from: 'inv', to: 'grid', type: 'grid'});
+                        }
+
+                    } else if (actualSolarInput > 0) {
+                        houseSource = "Mix";
+                        flows.push({from: 'sun', to: 'panel', type: 'solar'});
+                        flows.push({from: 'panel', to: 'inv', type: 'solar'});
+                        flows.push({from: 'inv', to: 'home', type: 'load'});
+                        
+                        const deficit = loadWatts - actualSolarInput;
+
+                        if (effectiveGrid) {
+                            flows.push({from: 'grid', to: 'inv', type: 'grid'});
+                            if(systemType === 'Hybrid' && batteryLevel < 100) {
+                                batteryStatus = "Charging";
+                                flows.push({from: 'inv', to: 'bat', type: 'battery'});
+                                chargingWatts = 500; 
+                            }
+                        } else if (batteryLevel > 0 && systemType !== 'On-Grid') {
+                            batteryStatus = "Discharging";
+                            flows.push({from: 'bat', to: 'inv', type: 'battery'});
+                        } else {
+                            houseSource = "Low Voltage";
+                        }
+                    } else {
+                        if (effectiveGrid) {
+                            houseSource = "Grid";
+                            flows.push({from: 'grid', to: 'inv', type: 'grid'});
+                            flows.push({from: 'inv', to: 'home', type: 'load'});
+                            if(systemType === 'Hybrid' && batteryLevel < 100) {
+                                batteryStatus = "Charging";
+                                flows.push({from: 'inv', to: 'bat', type: 'battery'});
+                                chargingWatts = 800;
+                            }
+                        } else if (batteryLevel > 0 && systemType !== 'On-Grid') {
+                            houseSource = "Battery";
+                            batteryStatus = "Discharging";
+                            flows.push({from: 'bat', to: 'inv', type: 'battery'});
+                            flows.push({from: 'inv', to: 'home', type: 'load'});
+                        } else {
+                            houseSource = "Blackout";
+                            status = "POWER FAILURE";
+                        }
+                    }
+                }
+
+                if(houseSource !== "Blackout") status = "System Active";
+
+                if(batteryStatus === 'Charging' && chargingWatts > 0) {
+                    const hours = (parseFloat(batteryStats.unitsToFull) * 1000) / chargingWatts;
+                    timeToFull = hours > 99 ? ">99h" : hours.toFixed(1) + "h";
+                } else if (batteryLevel >= 100) {
+                    timeToFull = "Full";
+                }
+
+                if (effectiveGrid) {
+                    const consumption = loadWatts + (batteryStatus==='Charging' ? chargingWatts : 0);
+                    const net = actualSolarInput - consumption;
+                    if (net >= 0) {
+                        gridFlowLabel = `EXP: ${Math.round(net)} W`;
+                        gridFlowStatus = "EXPORT";
+                    } else {
+                        gridFlowLabel = `IMP: ${Math.abs(Math.round(net))} W`;
+                        gridFlowStatus = "IMPORT";
+                    }
+                } else {
+                    gridFlowLabel = "CUT";
+                    gridFlowStatus = "CUT";
+                }
+
+                return { status, houseSource, batteryStatus, flows, actualSolarInput, effectiveGrid, chargingWatts, timeToFull, gridFlowLabel, gridFlowStatus };
+            }, [systemType, hour, gridOn, batteryLevel, actualSolarInput, loadWatts, effectiveGrid, batteryStats]);
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setBatteryLevel(prev => {
+                        if (systemType === 'On-Grid') return 0;
+                        let change = 0;
+                        if(simState.batteryStatus === 'Charging') change = 0.5;
+                        if(simState.batteryStatus === 'Discharging') change = -0.5;
+                        return Math.min(100, Math.max(0, prev + change));
+                    });
+                }, 200);
+                return () => clearInterval(timer);
+            }, [simState.batteryStatus, systemType]);
+
+            const dailyYield = systemSizeKW * 4.5;
+            const loss = systemType === 'On-Grid' && cutDuration > 0 
+                ? (dailyYield * (Math.min(cutDuration, 12)/12)).toFixed(2) 
+                : "0.00";
+
+            return (
+                <div className="flex flex-col xl:flex-row gap-6 text-white min-h-[800px]">
+                    <div className="xl:w-1/3 space-y-4">
+                        <div className="glass-card p-6 rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-violet-300 tracking-wider">SYSTEM TYPE</span>
+                                <div className="flex gap-1 bg-black/40 p-1 rounded-lg">
+                                    {['On-Grid', 'Hybrid', 'Off-Grid'].map(m => (
+                                        <button key={m} onClick={() => setSystemType(m)} 
+                                            className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${systemType===m ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-xs font-bold text-slate-400">TIME OF DAY</span>
+                                    <span className="text-lg font-mono text-violet-300">{hour}:00</span>
+                                </div>
+                                <input type="range" min="0" max="23" value={hour} onChange={(e) => setHour(Number(e.target.value))} className="w-full accent-violet-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                                <div className="flex justify-between text-[10px] text-slate-500 mt-1"><span>12 AM</span><span>12 PM</span><span>11 PM</span></div>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/10">
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-xs font-bold text-slate-400">HOME LOAD</span>
+                                    <span className="text-lg font-bold text-white">{loadWatts} W</span>
+                                </div>
+                                <input type="range" min="100" max="10000" step="100" value={loadWatts} onChange={(e) => setLoadWatts(Number(e.target.value))} className="w-full accent-rose-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                            </div>
+                        </div>
+
+                        <div className="glass-card p-6 rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                                <span className="text-xs font-bold text-blue-300 tracking-wider flex items-center gap-2"><Grid size={14}/> TOPCON ARRAY</span>
+                                <span className="text-xs font-bold bg-blue-500/20 text-blue-300 px-2 py-1 rounded border border-blue-500/30">{systemSizeKW.toFixed(2)} kW</span>
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <div className="flex justify-between text-[10px] text-slate-400 mb-1">STRINGS <span className="text-white">{numStrings}</span></div>
+                                    <input type="range" min="1" max="5" value={numStrings} onChange={(e) => setNumStrings(Number(e.target.value))} className="w-full accent-blue-500 h-1 bg-slate-800 rounded appearance-none" />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-[10px] text-slate-400 mb-1">PANELS / STRING <span className="text-white">{panelsPerString}</span></div>
+                                    <input type="range" min="1" max="20" value={panelsPerString} onChange={(e) => setPanelsPerString(Number(e.target.value))} className="w-full accent-blue-500 h-1 bg-slate-800 rounded appearance-none" />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-[10px] text-slate-400 mb-1">PANEL WATTAGE <span className="text-white">{panelWatts} W</span></div>
+                                    <input type="range" min="300" max="700" step="10" value={panelWatts} onChange={(e) => setPanelWatts(Number(e.target.value))} className="w-full accent-blue-500 h-1 bg-slate-800 rounded appearance-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="glass-card p-6 rounded-3xl space-y-4 border-l-4 border-l-rose-500">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-rose-300 tracking-wider">GRID CONTROL</span>
+                                <div className={`text-[10px] font-bold px-2 py-1 rounded ${effectiveGrid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {effectiveGrid ? 'ACTIVE' : 'CUT'}
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                 <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-slate-400">Manual Toggle</span>
+                                    <button onClick={() => setGridOn(!gridOn)} className={`w-12 h-6 rounded-full transition-colors relative ${gridOn ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${gridOn ? 'left-7' : 'left-1'}`}></div>
+                                    </button>
+                                 </div>
+                                 <div className="bg-black/30 p-3 rounded-xl border border-white/5 space-y-2">
+                                     <div className="text-[10px] text-rose-400 font-bold mb-1">SCHEDULED CUT SIMULATOR</div>
+                                     <div className="flex justify-between text-[10px] text-slate-400"><span>Start Time</span><span className="text-white">{cutStartTime}:00</span></div>
+                                     <input type="range" min="6" max="20" value={cutStartTime} onChange={(e)=>setCutStartTime(Number(e.target.value))} className="w-full accent-rose-500 h-1 bg-slate-800 rounded appearance-none" />
+                                     
+                                     <div className="flex justify-between text-[10px] text-slate-400"><span>Duration</span><span className="text-white">{cutDuration} hrs</span></div>
+                                     <input type="range" min="0" max="10" value={cutDuration} onChange={(e)=>setCutDuration(Number(e.target.value))} className="w-full accent-rose-500 h-1 bg-slate-800 rounded appearance-none" />
+                                 </div>
+                                 {loss > 0 && (
+                                     <div className="text-[10px] text-rose-400 bg-rose-900/20 p-2 rounded border border-rose-500/30 text-center">
+                                         ⚠️ Est. Yield Loss: {loss} kWh/day
+                                     </div>
+                                 )}
+                            </div>
+                        </div>
+
+                        {systemType !== 'On-Grid' && (
+                            <div className="glass-card p-6 rounded-3xl space-y-4 border-l-4 border-l-emerald-500">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-emerald-300 tracking-wider">LI-ION ANALYTICS</span>
+                                    <span className="text-xs font-bold text-emerald-400">{batteryLevel.toFixed(0)}%</span>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-black/30 p-2 rounded border border-white/5">
+                                        <div className="text-[9px] text-slate-500">CAPACITY</div>
+                                        <div className="text-sm font-mono text-white">{batteryStats.totalCapacity} kWh</div>
+                                    </div>
+                                    <div className="bg-black/30 p-2 rounded border border-white/5">
+                                        <div className="text-[9px] text-slate-500">UNITS TO FULL</div>
+                                        <div className="text-sm font-mono text-yellow-400">{batteryStats.unitsToFull}</div>
+                                    </div>
+                                    <div className="bg-black/30 p-2 rounded border border-white/5">
+                                        <div className="text-[9px] text-slate-500">BACKUP TIME</div>
+                                        <div className="text-sm font-mono text-emerald-400">{batteryStats.estDischargeTime} hrs</div>
+                                    </div>
+                                    <div className="bg-black/30 p-2 rounded border border-white/5">
+                                        <div className="text-[9px] text-slate-500">CHARGE TIME</div>
+                                        <div className="text-sm font-mono text-blue-400">{simState.timeToFull}</div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                     <div><div className="text-[10px] text-slate-400">VOLTS</div><input type="number" value={batteryVolt} onChange={(e)=>setBatteryVolt(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white"/></div>
+                                     <div><div className="text-[10px] text-slate-400">Ah</div><input type="number" value={batteryAh} onChange={(e)=>setBatteryAh(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white"/></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="xl:w-2/3 relative min-h-[600px] glass-panel rounded-3xl overflow-hidden border border-white/10">
+                         <div className="absolute top-0 left-0 w-full h-full bg-slate-950"></div>
+                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[100px]"></div>
+                         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[100px]"></div>
+
+                         <div className="absolute top-6 left-6 z-10">
+                            <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">SYSTEM STATUS</div>
+                            <div className={`text-3xl font-bold drop-shadow-lg ${simState.status === 'POWER FAILURE' ? 'text-red-500' : 'text-white'}`}>{simState.status}</div>
+                            <div className="text-sm text-violet-300 flex items-center gap-2 mt-1">
+                                <div className={`w-2 h-2 rounded-full ${simState.houseSource === 'None' || simState.houseSource === 'Blackout' ? 'bg-red-500' : 'bg-emerald-400 animate-pulse'}`}></div>
+                                {simState.houseSource} Powered
+                            </div>
+                        </div>
+
+                        <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            {simState.flows.map((f, i) => <Connection key={i} from={f.from} to={f.to} active={true} type={f.type} />)}
+                            
+                            <Connection from="sun" to="panel" active={false} />
+                            <Connection from="panel" to="inv" active={false} />
+                            <Connection from="inv" to="home" active={false} />
+                            <Connection from="inv" to="grid" active={false} />
+                            <Connection from="grid" to="home" active={false} />
+                            {systemType!=='On-Grid' && <Connection from="inv" to="bat" active={false} />}
+                        </svg>
+
+                        <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+                            <SimSunIcon intensity={sunIntensity} />
+                        </div>
+
+                        <div className={`absolute top-[25%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-1000 ${isDaytime ? 'opacity-100' : 'opacity-40'}`}>
+                            <SimPanelIcon />
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-blue-900/40 border border-blue-500/30 px-2 py-0.5 rounded text-[9px] text-blue-300 font-mono whitespace-nowrap backdrop-blur-md">
+                                {actualSolarInput} W
+                            </div>
+                        </div>
+
+                        <div className={`absolute left-8 top-1/2 transform -translate-y-1/2 transition-opacity ${effectiveGrid ? 'opacity-100' : 'opacity-30'}`}>
+                            <SimGridIcon />
+                            <div className={`text-[9px] text-center mt-2 font-bold px-2 py-1 rounded-full border backdrop-blur-md whitespace-nowrap ${simState.gridFlowStatus === 'EXPORT' ? 'text-green-400 bg-green-900/30 border-green-500/30' : simState.gridFlowStatus === 'IMPORT' ? 'text-rose-400 bg-rose-900/30 border-rose-500/30' : 'text-slate-400 bg-black/50 border-white/10'}`}>
+                                {simState.gridFlowLabel}
+                            </div>
+                        </div>
+
+                        <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                            <div className={`${simState.houseSource === 'Blackout' ? 'text-rose-500' : 'text-violet-400'}`}><SimHomeIcon /></div>
+                            <div className="text-[9px] text-center mt-2 font-bold text-violet-300 bg-violet-900/30 border border-violet-500/30 px-2 py-1 rounded-full backdrop-blur-md whitespace-nowrap">
+                                LOAD: {loadWatts}W
+                            </div>
+                        </div>
+
+                        {systemType !== 'On-Grid' && (
+                            <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+                                <SimBatteryIcon level={batteryLevel} />
+                                <div className={`text-[9px] text-center mt-2 font-bold px-2 py-1 rounded-full border backdrop-blur-md ${simState.batteryStatus === 'Charging' ? 'text-emerald-400 bg-emerald-900/30 border-emerald-500/30' : simState.batteryStatus === 'Discharging' ? 'text-amber-400 bg-amber-900/30 border-amber-500/30' : 'text-slate-400 bg-black/50 border-white/10'}`}>
+                                    {batteryLevel.toFixed(0)}%
+                                </div>
+                            </div>
+                        )}
+
+                        <InverterScreen 
+                            solarWatts={actualSolarInput} loadWatts={loadWatts} 
+                            gridStatus={effectiveGrid} batteryStatus={simState.batteryStatus} 
+                            batteryLevel={batteryLevel} systemType={systemType} 
+                            systemVolts={batteryVolt} pvVolts={systemPVVolts} chargingWatts={simState.chargingWatts} 
+                        />
+                    </div>
+                </div>
+            );
+        };
+
+        const PreviousWorks = () => {
+            const projects = [
+                { title: "20kW Flour Mill", type: "Commercial Hybrid", loc: "Lucknow, UP", color: "bg-blue-500" },
+                { title: "5kW Residential", type: "On-Grid", loc: "Varanasi, UP", color: "bg-emerald-500" },
+                { title: "100kW Factory", type: "Industrial", loc: "Noida, UP", color: "bg-violet-500" },
+                { title: "3kW Farm House", type: "Off-Grid", loc: "Kanpur, UP", color: "bg-amber-500" },
+            ];
+
+            return (
+                <div className="py-20">
+                    <div className="max-w-7xl mx-auto px-4">
+                        <div className="text-center mb-16">
+                            <h2 className="text-4xl font-bold text-white mb-4">Our Proven Track Record</h2>
+                            <p className="text-slate-400 text-lg">Delivering excellence across Uttar Pradesh.</p>
+                        </div>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {projects.map((p, i) => (
+                                <div key={i} className="glass-card overflow-hidden rounded-3xl group cursor-pointer border border-white/10 hover:border-violet-500/50 transition-all">
+                                    <div className={`h-48 ${p.color} opacity-20 group-hover:opacity-30 transition-all relative overflow-hidden`}>
+                                        <div className="absolute inset-0 flex items-center justify-center text-white/20 text-6xl font-bold">
+                                            {p.title.charAt(0)}
+                                        </div>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="text-xs font-bold text-violet-400 mb-1">{p.type.toUpperCase()}</div>
+                                        <h3 className="text-xl font-bold text-white mb-2">{p.title}</h3>
+                                        <div className="flex items-center text-slate-500 text-sm gap-2">
+                                            <MapPin size={14} /> {p.loc}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ContactForm = () => {
+            const [formData, setFormData] = useState({
+                name: '', phone: '', address: '', systemType: 'On-Grid', message: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const subject = `Inquiry for ${formData.systemType} System from ${formData.name}`;
+                const body = `Name: ${formData.name}%0D%0APhone: ${formData.phone}%0D%0AAddress: ${formData.address}%0D%0ASystem Type: ${formData.systemType}%0D%0AMessage: ${formData.message}`;
+                window.location.href = `mailto:Radiantenergieslead@gmail.com?subject=${subject}&body=${body}`;
+            };
+
+            return (
+                <div className="py-20 min-h-screen flex items-center justify-center relative">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+                    
+                    <div className="glass-card max-w-2xl w-full mx-4 p-8 md:p-12 rounded-[40px] border border-white/10 relative z-10 backdrop-blur-2xl bg-slate-900/60">
+                        <div className="text-center mb-10">
+                            <h2 className="text-3xl font-bold text-white mb-2">Start Your Solar Journey</h2>
+                            <p className="text-slate-400">Fill the details below and we'll send a quote directly to your inbox.</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Full Name</label>
+                                    <div className="relative">
+                                        <User className="absolute left-4 top-3.5 text-slate-500" size={18} />
+                                        <input required type="text" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-12 py-3 text-white focus:border-violet-500 focus:outline-none transition-all" placeholder="John Doe" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Mobile Number</label>
+                                    <div className="relative">
+                                        <Smartphone className="absolute left-4 top-3.5 text-slate-500" size={18} />
+                                        <input required type="tel" value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-12 py-3 text-white focus:border-violet-500 focus:outline-none transition-all" placeholder="+91 98765 43210" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Installation Address</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-4 top-3.5 text-slate-500" size={18} />
+                                    <input required type="text" value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-12 py-3 text-white focus:border-violet-500 focus:outline-none transition-all" placeholder="City, State, Pincode" />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">System Requirement</label>
+                                <div className="relative">
+                                    <Settings className="absolute left-4 top-3.5 text-slate-500" size={18} />
+                                    <select value={formData.systemType} onChange={e=>setFormData({...formData, systemType: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-12 py-3 text-white focus:border-violet-500 focus:outline-none transition-all appearance-none">
+                                        <option>On-Grid System (Net Metering)</option>
+                                        <option>Off-Grid System (Battery Backup)</option>
+                                        <option>Hybrid System</option>
+                                        <option>Flour Mill / Atta Chakki</option>
+                                        <option>Commercial / Industrial</option>
+                                        <option>Water Pump</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Additional Details</label>
+                                 <textarea value={formData.message} onChange={e=>setFormData({...formData, message: e.target.value})} rows="3" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none transition-all" placeholder="Any specific requirements..."></textarea>
+                            </div>
+
+                            <button type="submit" className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-lg hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all flex items-center justify-center gap-2">
+                                Send Request <ArrowRight size={20} />
+                            </button>
+                            <p className="text-center text-xs text-slate-500">Opens your email client to send details to Radiantenergieslead@gmail.com</p>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const Navigation = ({ activeTab, setActiveTab }) => {
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+            return (
+                <nav className="fixed w-full z-50 top-0 left-0 bg-slate-950/80 backdrop-blur-xl border-b border-white/5">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-20">
+                            <div className="flex items-center gap-3 cursor-pointer" onClick={()=>setActiveTab('home')}>
+                                <img 
+                                    src="Company.png" 
+                                    alt="Radiant Energies Logo" 
+                                    className="h-12 w-auto object-contain rounded-xl border border-white/20 shadow-lg bg-black/20"
+                                    onError={(e) => {e.target.style.display='none'}}
+                                />
+                                <div>
+                                    <span className="font-bold text-xl text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-wide">
+                                        RADIANT ENERGIES
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="hidden md:flex items-center space-x-1 bg-white/5 rounded-full p-1 border border-white/10">
+                                {['home', 'services', 'simulator', 'work', 'contact'].map((item) => (
+                                    <button
+                                        key={item}
+                                        onClick={() => setActiveTab(item)}
+                                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                                            activeTab === item 
+                                            ? 'bg-violet-600 text-white shadow-lg shadow-violet-900/20' 
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {item.charAt(0).toUpperCase() + item.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="md:hidden">
+                                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white p-2">
+                                    {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {isMenuOpen && (
+                        <div className="md:hidden bg-slate-900/95 backdrop-blur-xl border-t border-white/10">
+                            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                                {['home', 'services', 'simulator', 'work', 'contact'].map((item) => (
+                                    <button
+                                        key={item}
+                                        onClick={() => { setActiveTab(item); setIsMenuOpen(false); }}
+                                        className={`block w-full text-left px-3 py-4 rounded-xl text-base font-medium ${
+                                            activeTab === item ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        {item.charAt(0).toUpperCase() + item.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const Hero = ({ setActiveTab }) => (
+            <div className="relative min-h-screen flex flex-col justify-center items-center pt-20 overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full z-0">
+                     <video 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        className="w-full h-full object-cover"
+                    >
+                        <source src="Website logo Animation.mp4" type="video/mp4" />
+                    </video>
+                    <div className="absolute inset-0 bg-slate-950/80"></div>
+                </div>
+
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-violet-300 text-sm font-medium mb-8 backdrop-blur-md shadow-lg">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Top Solar EPC in Uttar Pradesh
+                    </div>
+                    <h1 className="text-5xl md:text-8xl font-bold tracking-tight text-white mb-8 leading-[1.1]">
+                        Energy That <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 drop-shadow-[0_0_30px_rgba(167,139,250,0.5)]">Empowers You</span>
+                    </h1>
+                    <p className="mt-4 max-w-2xl mx-auto text-xl text-slate-400 mb-10 leading-relaxed">
+                        Direct EPC Work, Reselling, and AMC. <br/>
+                        We build transparent, efficient solar systems with premium materials.
+                    </p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                        <button onClick={() => setActiveTab('simulator')} className="px-8 py-4 rounded-2xl bg-white text-slate-900 font-bold text-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
+                            Launch Simulator <ArrowRight size={20} />
+                        </button>
+                        <button onClick={() => setActiveTab('contact')} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-colors backdrop-blur-md">
+                            Get a Quote
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const Footer = () => (
+            <footer className="border-t border-white/10 bg-black/40 backdrop-blur-2xl pt-16 pb-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-4 gap-12 mb-12">
+                        <div className="col-span-1 md:col-span-2">
+                            <div className="flex items-center gap-3 mb-6">
+                                <img 
+                                    src="Company.png" 
+                                    alt="Radiant Energies Logo" 
+                                    className="h-10 w-auto object-contain rounded-xl border border-white/20 shadow-lg bg-black/20"
+                                    onError={(e) => {e.target.style.display='none'}}
+                                />
+                                <span className="font-bold text-xl text-white">RADIANT ENERGIES</span>
+                            </div>
+                            <p className="text-slate-400 text-lg leading-relaxed max-w-sm">
+                                Premier Solar EPC company providing end-to-end solutions from flour mills to residential rooftops.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-white mb-6">Contact Us</h4>
+                            <ul className="space-y-4 text-slate-400">
+                                <li className="flex items-center gap-3"><Phone size={18} className="text-violet-500" /> +91 91050 93635</li>
+                                <li className="flex items-center gap-3"><Mail size={18} className="text-violet-500" /> Radiantenergieslead@gmail.com</li>
+                                <li className="flex items-center gap-3"><MapPin size={18} className="text-violet-500" /> Uttar Pradesh, India</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-slate-500 text-sm">&copy; 2026 Radiant Energies. All rights reserved.</p>
+                        <p className="text-slate-500 text-sm font-medium tracking-wide">Made by Ram</p>
+                    </div>
+                </div>
+            </footer>
+        );
+
+        const ServiceCard = ({ icon: Icon, title, desc, price }) => (
+            <div className="group relative p-8 rounded-[32px] glass-card border border-white/10 hover:border-violet-500/50 transition-all duration-500 hover:-translate-y-2 overflow-hidden bg-slate-900/40">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-violet-400 mb-6 group-hover:bg-violet-600 group-hover:text-white transition-all duration-500 shadow-lg">
+                        <Icon size={32} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3">{title}</h3>
+                    <p className="text-slate-400 mb-6 leading-relaxed text-lg">{desc}</p>
+                    {price && (
+                        <div className="inline-block px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm font-bold border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                            {price}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+
+            useEffect(() => {
+                window.scrollTo(0,0);
+            }, [activeTab]);
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-violet-500/30">
+                    <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
+                    <main>
+                        {activeTab === 'home' && (
+                            <React.Fragment>
+                                <Hero setActiveTab={setActiveTab} />
+                                <div className="py-24 relative">
+                                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                        <div className="text-center mb-16">
+                                            <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">Our Core Expertise</h2>
+                                            <p className="text-slate-400 text-xl">Tailored solar solutions for Homes, Factories & Flour Mills.</p>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                            <ServiceCard icon={ShoppingCart} title="Reselling Goods" desc="Direct access to premium Inverters, Panels (TopCon/Mono), and Lithium batteries at factory rates." price="Best Market Rates" />
+                                            <ServiceCard icon={Zap} title="Direct EPC Work" desc="Complete Engineering, Procurement, and Construction service. We don't outsource; we build it ourselves." price="Turnkey Solutions" />
+                                            <ServiceCard icon={Wrench} title="AMC Services" desc="Comprehensive maintenance for your plant. Regular cleaning, technical checks, and efficiency reporting." price="24/7 Support" />
+                                        </div>
+                                     </div>
+                                </div>
+                            </React.Fragment>
+                        )}
+                        
+                        {activeTab === 'services' && (
+                            <div className="pt-32 pb-20">
+                                 <div className="max-w-7xl mx-auto px-4 text-center mb-16">
+                                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">Our Services</h1>
+                                    <p className="text-xl text-slate-400 max-w-3xl mx-auto">We provide a complete ecosystem for solar energy. From buying a single inverter to commissioning a megawatt plant.</p>
+                                 </div>
+                                 <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    <ServiceCard icon={ShoppingCart} title="Reselling Goods" desc="Authentic components from top brands." price="Wholesale Rates" />
+                                    <ServiceCard icon={Zap} title="EPC Projects" desc="End-to-end plant setup with warranty." price="Best in Class" />
+                                    <ServiceCard icon={Wrench} title="AMC Support" desc="Keep your generation high year-round." price="Annual Plans" />
+                                    <ServiceCard icon={TrendingUp} title="Flour Mill Setup" desc="Specialized Atta Chakki solarization." price="High ROI" />
+                                    <ServiceCard icon={ShieldCheck} title="Quality Audits" desc="Testing existing plants for efficiency." />
+                                    <ServiceCard icon={BarChart3} title="Consultation" desc="Technical analysis and ROI reports." />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'simulator' && (
+                            <div className="pt-32 pb-20 min-h-screen">
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div className="text-center mb-12">
+                                        <div className="inline-block px-4 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-bold mb-4 tracking-widest">ADVANCED PHYSICS ENGINE</div>
+                                        <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">System Simulator</h2>
+                                        <p className="text-xl text-slate-400">Configure TopCon Arrays, Li-Ion Batteries, and simulate Grid Cuts.</p>
+                                    </div>
+                                    <Simulator />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'work' && (
+                            <div className="pt-32">
+                                <PreviousWorks />
+                            </div>
+                        )}
+
+                        {activeTab === 'contact' && (
+                            <ContactForm />
+                        )}
+                    </main>
+
+                    <Footer />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
